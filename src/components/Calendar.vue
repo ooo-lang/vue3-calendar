@@ -55,6 +55,7 @@ export default {
   name: 'CalendarComp',
   data() {
     return {
+      /** 現在時刻 */
       currentDate: moment(),
       // events: this.calendarEvents,
     };
@@ -64,20 +65,35 @@ export default {
     calendars() {
       return this.getCalendar();
     },
+
+    /**
+     * 画面表示用日時
+     */
     displayMonth() {
       return this.currentDate.format('YYYY[年]M[月]')
     },
+
+    /**
+     * 当月
+     */
     currentMonth() {
       return this.currentDate.format('YYYY-MM')
     }
   },
   methods: {
+    /**
+     * 当月の最初の日付取得
+     */
     getStartDate() {
       let date = moment(this.currentDate);
       date.startOf("month");
       const youbiNum = date.day();
       return date.subtract(youbiNum, "days");
     },
+
+    /**
+     * 当月の最後の日付取得
+     */
     getEndDate() {
       let date = moment(this.currentDate);
       date.endOf("month");
@@ -85,37 +101,65 @@ export default {
       return date.add(6 - youbiNum, "days");
     },
     getCalendar() {
+
+      // 当月最初の日付
       let calendarDate = this.getStartDate();
+
+      // 当月最後の日付
       const endDate = this.getEndDate();
+
+      // 当月の週の数
       const weekNumber = Math.ceil(endDate.diff(calendarDate, "days") / 7);
       let calendars = [];
       for (let week = 0; week < weekNumber; week++) {
         let weekRow = [];
         for (let day = 0; day < 7; day++) {
-          // ↓↓↓その月のイベントをDBから取ってきてListからfindしていく方法がいいかも
+
+          // 当日のイベント
           let dayEvents = this.getDayEvents(calendarDate, day)
           weekRow.push({
             date: calendarDate.get("date"),
             month: calendarDate.format("YYYY-MM"),
             dayEvents
           });
+
+          // 1日進む
           calendarDate.add(1, "days");
         }
         calendars.push(weekRow);
       }
       return calendars;
     },
+
+    /**
+     * 次月を取得
+     */
     nextMonth() {
       this.currentDate = moment(this.currentDate).add(1, "month");
     },
+
+    /**
+     * 前月を取得
+     */
     prevMonth() {
       this.currentDate = moment(this.currentDate).subtract(1, "month");
     },
+
+    /**
+     * 指定Indexで曜日を取得する
+     * @param {number} dayIndex 
+     */
     youbi(dayIndex) {
-      // 環境変数から日本語の曜日verと英語の曜日verを設定ごとに取得するといいかも
+      // 曜日を定義
       const week = ["日", "月", "火", "水", "木", "金", "土"];
       return week[dayIndex];
     },
+
+    /**
+     * 当日のイベントを取得する
+     * @param {Date} date 当日の日付
+     * @param {*} day 
+     */
     getDayEvents(date, day) {
       let stackIndex = 0;
       let dayEvents = [];
@@ -157,16 +201,27 @@ export default {
       });
       return dayEvents;
     },
+
+    /**
+     * 週を跨ぐ場合はカレンダー幅を超えないように制御
+     * @param {Date} start 
+     * @param {Date} end 
+     * @param {*} day 
+     */
     getEventWidth(start, end, day) {
+      
+      // イベントの期間
       let betweenDays = moment(end).diff(moment(start), "days")
+
       if (betweenDays > 6 - day) {
         return (6 - day) * 100 + 95;
       } else {
         return betweenDays * 100 + 95;
       }
     },
-    // DB側で行う場合はこの処理は必要ない
+
     sortedEvents() {
+      // 開始日順にイベントを昇順にソート
       return this.calendarEvents.slice().sort(function (a, b) {
         let startDate = moment(a.start).format('YYYY-MM-DD')
         let startDate_2 = moment(b.start).format('YYYY-MM-DD')
